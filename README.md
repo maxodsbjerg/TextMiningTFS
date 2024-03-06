@@ -15,10 +15,9 @@ Text mining techniques were applied to the Trykkefrihedens Skrifter dataset to u
 3. **Initial Analysis**: Basic analyses were performed to count word frequencies and understand the distribution of words in the text.
 
 4. **Handling Stopwords**: Common stopwords in Danish and German languages, as well as project-specific stopwords, were identified and removed from the text data to focus on meaningful words.
+5. **Keywords in Context (KWIC) Analysis**: A KWIC analysis was conducted to explore the context in which specific keywords appear in the text documents.
 
-5. **Bigrams Analysis**: Bigrams, or word pairs, were analyzed to identify associations and patterns in the text.
-
-6. **Keywords in Context (KWIC) Analysis**: A KWIC analysis was conducted to explore the context in which specific keywords appear in the text documents.
+6. **Bigrams Analysis**: Bigrams, or word pairs, were analyzed to identify associations and patterns in the text.
 
 7. **Saving Results**: The results of the analysis, including visualizations and insights, were saved for further reference and analysis.
 
