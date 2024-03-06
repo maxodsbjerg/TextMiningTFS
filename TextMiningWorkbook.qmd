@@ -1,0 +1,122 @@
+---
+title: "Textmining Trykkefrihedens Skrifter"
+format: html
+editor: visual
+---
+
+# Loading libraries
+
+The dataset is processed in the software programme R, offering various methods for statistical analysis and graphic representation of the results. In R, one works with packages each adding numerous functionalities to the core functions of R. In this example, the relevant packages are:
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(stopwords)
+library(quanteda)
+```
+
+# Load Data
+
+The code below reads data from a CSV file named "tfs_structured.csv" and stores it in a variable called tfs.
+
+```{r}
+tfs <- read_csv("data/tfs_structured.csv")
+```
+
+Here's a breakdown of what each part of the code does: \* \<-: The assignment operator in R assigns the result of the operation on the right-hand side to the variable on the left-hand side. \* read_csv: This is a function in R that reads data from a CSV file. "data/tfs_structured.csv": This is the file path where the CSV file is located. It tells R where to find the file. In this case, the file is located in a folder called "data" and its name is "tfs_structured.csv". \* tfs: This is the name of the variable where the data from the CSV file will be stored. Once the data is read, it will be accessible in R using this variable name. In summary, the code reads data from a CSV file named "tfs_structured.csv" and stores it in a variable called tfs, allowing the data to be manipulated and analyzed in R. \# Converting to the tidy textmining format This code takes the data stored in the variable tfs, which contains text data from Trykkefrihedens skrifter, and converts it into a tidy format suitable for text analysis.
+
+```{r}
+tfs_tidy <- tfs %>% 
+  unnest_tokens(word, content)
+```
+
+Here's a breakdown of the code: tfs_tidy: This is a new variable where the transformed data will be stored. tfs %\>%: This is the pipe operator %\>%, which is used to chain operations together in R. It takes the data frame tfs and passes it as the first argument to the function or operation that follows. unnest_tokens(word, content): This is a function call from the tidytext package. It tokenizes the text data, breaking it down into individual words. The word argument specifies the name of the column that will contain the individual words, and the content argument specifies the column containing the text data to be tokenized. In summary, the code transforms the original data frame tfs by breaking down the text data into individual words and storing them in a new variable called tfs_tidy, making it suitable for further text analysis tasks. \# Inital analysis
+
+```{r}
+tfs_tidy %>% 
+  count(word, sort = TRUE)
+```
+The code tfs_tidy %>% count(word, sort = TRUE) simply counts the frequency of each unique word in the tfs_tidy dataset, sorting the results in descending order based on word count.
+
+Alot of stopwords, which are are common words like "og", "den", and "det" that are often filtered out during text analysis because they don't add significant meaning. In the code tfs_tidy %>% count(word, sort = TRUE), it counts all words, including stopwords, which may clutter the results with less informative words. Lets sort them out. 
+
+# Handling stopwords
+
+```{r}
+stopord_da <- tibble(word = stopwords("da"))
+```
+This code chunk creates a tibble named stopord_da containing Danish stopwords. The function stopwords("da") retrieves a list of common stopwords in the Danish language. The tibble stopord_da will have a single column named "word" containing the Danish stopwords.
+
+```{r}
+stopord_de <- tibble(word = stopwords("de"))
+```
+
+This code chunk creates a tibble named stopord_de containing German stopwords. Similar to the previous chunk, the function stopwords("de") retrieves a list of common stopwords in the German language. The tibble stopord_de will have a single column named "word" containing the German stopwords.
+
+```{r}
+stopord_tfs <- read_csv("./data/tfs_stopord.csv")
+```
+This code chunk reads data from a CSV file named "tfs_stopord.csv" located in the "./data" directory. The function read_csv() reads the CSV file and assigns the data to the variable stopord_tfs. This file likely contains stopwords specific to the dataset or project being analyzed. The structure of the data will be similar to a tibble, with one column containing the stopwords.
+These stop words are specifically tailored for Trykkefrihedens Skrifter, considering older spelling conventions of stop words.
+
+## Removing stopwords and counting again:
+This code performs several operations on the tfs_tidy dataset, which contains tokenized text data:
+```{r}
+tfs_tidy %>%
+  anti_join(stopord_da) %>% 
+  anti_join(stopord_de) %>% 
+  anti_join(stopord_tfs) %>% 
+  count(word, sort = TRUE)
+```
+
+tfs_tidy %>%: The %>% operator, known as the pipe operator, chains operations together, passing the tfs_tidy dataset to the next function in the sequence.
+anti_join(stopord_da) %>%: This operation removes Danish stopwords from the text data by performing an anti-join with the stopord_da dataset, which contains Danish stopwords. An anti-join retains only the rows from the left dataset (tfs_tidy) that do not have a match in the right dataset (stopord_da).
+anti_join(stopord_de) %>%: Similarly, this operation removes German stopwords from the text data by performing an anti-join with the stopord_de dataset, which contains German stopwords.
+anti_join(stopord_tfs) %>%: This operation removes project-specific stopwords from the text data by performing an anti-join with the stopord_tfs dataset, which contains stopwords specific to the Trykkefrihedens Skrifter project.
+count(word, sort = TRUE): Finally, the count() function tallies the frequency of each unique word remaining in the text data after removing the stopwords. The sort = TRUE argument sorts the results in descending order of word frequency.
+In summary, this code chunk filters out Danish, German, and project-specific stopwords from the tfs_tidy dataset and then counts the frequency of the remaining words.
+
+This does the exact same thing, but only on text from Række 1, binde 5+6 (Landøkonomi (31 skrifter).)
+
+```{r}
+tfs_tidy %>%
+  anti_join(stopord_da) %>% 
+  anti_join(stopord_de) %>% 
+  anti_join(stopord_tfs) %>% 
+  filter(række == 1) %>% 
+  filter(bind %in% c(5,6)) %>% 
+  anti_join(stopord) %>% 
+  count(word, sort = TRUE)
+```
+
+# Keyword in context
+In this code we are going to conduct a 'Keywords in Context' (KWIC) analysis on the text data from Trykkefrihedens Skrifter using the quanteda package. This analysis will allow us to examine how specific keywords, such as 'jord', are used within the text documents, providing valuable insight into the context and usage patterns of these keywords throughout the corpus.
+
+```{r}
+#Creating quanteda corpus
+tfs_corp <- tfs_df %>%
+  #Choose Række and Bind of choice
+  filter(række == 1 & bind %in% c(5,6)) %>%
+  select(refnr, side, content) %>%
+  corpus(text_field = "content")
+
+# Assign docid to the corpus - makes it easier to track the actual text back to Trykkefrihedens skrifter
+docid <- paste0(tfs_corp$refnr, "- side ", tfs_corp$side)
+docnames(tfs_corp) <- docid
+
+#Keywords in context 
+tfs_kwic <- tfs_corp %>%
+  tokens() %>%
+  #Choose phrase of interest
+  kwic(pattern = phrase("jord"), window = 4)
+tfs_kwic
+```
+
+tfs_corp <- tfs_df %>% filter(række == 1 & bind %in% c(5,6)) %>% select(refnr, side, content) %>% corpus(text_field = "content"):
+This code filters the data frame tfs_df to include only rows where "række" equals 1 and "bind" is either 5 or 6. Then it selects columns "refnr," "side," and "content" from the filtered data and creates a corpus named tfs_corp using the corpus() function from the quanteda package, where "content" is the text field used in the corpus.
+docid <- paste0(tfs_corp$refnr, "- side ", tfs_corp$side):
+This line creates unique document IDs for each text document in the corpus by combining "refnr" and "side" columns separated by "- side ".
+docnames(tfs_corp) <- docid:
+This assigns the document IDs to the corpus, making it easier to track the original text back to Trykkefrihedens Skrifter.
+tfs_kwic <- tfs_corp %>% tokens() %>% kwic(pattern = phrase("jord"), window = 4):
+This code generates a keyword-in-context (KWIC) analysis for the word "jord" with a window size of 4 words, which shows the context in which "jord" appears in the text documents within the corpus. The KWIC analysis provides insight into how the word is used and in what context within the text data.

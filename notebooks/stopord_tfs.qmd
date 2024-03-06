@@ -1,0 +1,55 @@
+---
+title: "Stopord TFS"
+format: html
+editor: visual
+---
+
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(stopwords)
+```
+
+
+```{r}
+tfs <- read_csv("data/tfs_structured.csv")
+```
+
+```{r}
+tfs_tidy <- tfs %>% 
+  unnest_tokens(word, content)
+```
+
+
+
+```{r}
+tfs_tidy %>% 
+  count(word, sort = TRUE)
+```
+
+```{r}
+stopord_da <- tibble(word = stopwords("da"))
+```
+
+
+```{r}
+stopord_de <- tibble(word = stopwords("de"))
+```
+
+
+
+```{r}
+tfs_stopord <-tfs_tidy %>%
+  anti_join(stopord_da) %>% 
+  anti_join(stopord_de) %>% 
+  count(word, sort = TRUE) %>%
+  slice_max(n, n = 100) %>% 
+  select(word) 
+```
+
+
+```{r}
+write_csv(tfs_stopord, "../data/tfs_stop.csv")
+```
+

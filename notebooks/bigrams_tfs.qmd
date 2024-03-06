@@ -1,0 +1,140 @@
+---
+title: "Bigrams on Trykkefrihedens skrifter"
+format: html
+editor: visual
+---
+
+# Loading libraries
+
+The dataset is processed in the software programme R, offering various methods for statistical analysis and graphic representation of the results. In R, one works with packages each adding numerous functionalities to the core functions of R. In this example, the relevant packages are:
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(stopwords)
+library(quanteda)
+```
+
+# Load Data
+
+The code below reads data from a CSV file named "tfs_structured.csv" and stores it in a variable called tfs.
+
+```{r}
+tfs <- read_csv("data/tfs_structured.csv")
+```
+
+
+
+# Text mining opgaven - N-grams
+
+Data behandlingen vil tage udgangspunkt i [Tidy Data-princippet](https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html) som den er implementeret i tidytext-pakken. Tankegangen er her at tage en tekst og splitte den op i mindre dele. Den typiske tilgang er at splitte teksten op i enkelte ord. På denne måde optræder der kun ét ord per række i datasættet. Men man kan også splitte teksten op i ordpar(eller ordtrioer, ordkvartetter osv.) Dette kaldes i text mining verdenen N-grams, da man i princippet kan lave sekvenser af præcis så mange ord, som man vil. Når man har med ordpar at gøre så kaldes de bigrams. 
+
+# Bigrams
+N-grams er overlappende så i et scenarie med bigrams bliver teksten "den glade kat går ad tagryggen" til:
+
+"den glade", "glade kat", "kat går","går ad","ad tagryggen", "tagryggen NA"
+
+Bemærk at det sidste ord i det sidste bigram er værdien "NA". Der er altså ikke noget sidste ord i det bigram.
+
+Ligesom før bruger vi `unnest_tokens`, men denne gang specificerer vi at vi vil have ordpar(bigrams):
+
+```{r}
+tfs %>% 
+  unnest_tokens(bigram, content, token = "ngrams", n = 2) -> tfs_bigrams
+```
+
+Lad os se det in action. Istedet for blot at skrive navnet på vores nye data frame og bladre i kolonnerne bruger vi nu pipen og funktionen `select` til kun at vælge vores nye kolonne:
+
+```{r}
+tfs_bigrams %>% 
+  select(bigram)
+```
+
+Lige som vi kunne med lplace, så kan vi også optælle bigrams:
+
+```{r}
+tfs_bigrams %>% 
+  count(bigram, sort = TRUE)
+```
+<br> Allerede her har vi en del interessante ordpar. Men der er noget der tyder på, at der er en del sammenhæng mellem tjenestefolk, der søger "condition", som i gammeldags sprogbrug er "tjenende stilling" eller en plads. Vi ser også OCR-fejlen "eondition" og den anden stavemåde "kondition".
+
+Desuden støder vi på stopord der forstyrer os. Ordpar med stopord kunne vi godt tænke os at sortere fra. Først skal vi dog have indlæst en stopordsliste:
+
+```{r message=FALSE}
+stopord <- read_csv("https://gist.githubusercontent.com/maxodsbjerg/4d1e3b1081ebba53a8d2c3aae2a1a070/raw/e1f63b4c81c15bb58a54a2f94673c97d75fe6a74/stopord_18.csv")
+```
+
+<br>
+
+Før vi kan fjerne ordpar hvor et af ordene er stopord, er vi dog nødt til at have splittet kolonnen "bigram" op i to: "word1", "word2":
+
+```{r}
+tfs_bigrams %>% 
+  separate(bigram, c("word1", "word2"), sep = " ") ->tfs_bigrams_separated
+```
+
+Derefter kan vi filtrere stopordene ud i begge kolonner, hvilket vi gemmer til en ny dataframe:
+
+```{r}
+tfs_bigrams_separated %>% 
+  filter(!word1 %in% stopord$word) %>%
+  filter(!word2 %in% stopord$word) -> tfs_bigrams_filtered
+```
+
+Dernæst kan vi optælle vores bigrams uden stopord
+
+```{r}
+tfs_bigrams_filtered %>% 
+  count(word1, word2, sort = TRUE)
+```
+Det er nu helt tydeligt at det meget handler om tjenesteforhold. I særdeles folk der ønsker ansættelses. Men hvordan forholder det sig helt konkret med tfskeord? Hvilke ord bruges foran dem?
+
+Eftersom vi har bigram i to kolonner kan vi nu også styre præcis hvilket ord vi kigger på som ord nummer 2. Lad os prøve med "tfske-ord". Tricket her er funktionen `str_detect`, som får at vide at den leder ord der starter med "tfs" og kan efterfølges af 0 eller flere bogstaver mellem a til z og æ og ø. "\\b" angiver at det efterfølgende s skal være starten af ordet. Denne måde at angive tekstmønstre på kaldes regulære udtryk og er en kraftfuld og avanceret måde at søge efter mønstre i tekst.
+
+```{r}
+tfs_bigrams_filtered %>% 
+  filter(str_detect(word2, "\\bære[a-zæø]*")) %>% 
+  count(word1, word2, sort = TRUE)
+```
+
+Vi ser stadig at "di tfst" spøger en smule, men der dukker pludselig en masse interessante bigrams op. En måde at visualisere det bedre på end en liste er gennem en netværks-graf. På listen oven for ses at flere af de hyppigt forekommende ordpar har "tfskegarn" som word2. I en netværksgraf vil tfskegarn altså blive et punkt, mens "uldent", "bomulds", "coul, og "couleurt" vil være punkter der peger ind mod "tfskegarn". På denne måde kan man på en ret overskuelig måde illustrere flere ords interne forhold.
+
+Allerførst gemmer vi den ovenstående optælling til en ny data frame, så vi kan arbejde videre med den:
+
+```{r}
+tfs_bigrams_filtered %>% 
+  filter(str_detect(word2, "\\bgud[a-zæø]*")) %>% 
+  count(word1, word2, sort = TRUE) -> god_bigrams_counts
+```
+
+Herefter bruger vi biblioteket "igraph" til at lave vores dataframe om til et netværksgraf-element. Inden da specificerer vi, at vi kun er interesserede i bigrams, der optræder mere en 8 gange:
+
+```{r, message=FALSE}
+library(igraph)
+
+bigram_graph <- god_bigrams_counts %>%
+  filter(n > 8) %>%
+  graph_from_data_frame()
+```
+
+Tilsidst bruger vi pakken "ggraph" til at visualisere netværket:
+
+```{r}
+library(ggraph)
+a <- grid::arrow(type = "closed", length = unit(.15, "inches"))
+
+ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.07, 'inches')) +
+  geom_node_point(color = "darkgreen", size = 5) +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+  theme_void()
+```
+
+Herved for vi altså på en overskuelig måde visualiseret de forskellige ords forhold. 
+
+For at gemme grafen bruger vi funktionen `ggsave`, hvor man angiver filnavn og type efterfulgt af bredde og højde og hvilken enhed, samt baggrundsfarven.
+
+```{r}
+ggsave("graphics/god_bigrams.png", width = 28, height = 20, units = "cm", bg = "white")
+```
