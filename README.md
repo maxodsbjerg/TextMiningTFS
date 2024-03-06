@@ -2,6 +2,9 @@
 
 This repository contains the results of a text mining analysis conducted on Trykkefrihedens Skrifter using R programming language. Text mining involves extracting meaningful insights and patterns from textual data.
 
+https://tekster.kb.dk/text?editorial=no&f%5Bsubcollection_ssi%5D%5B%5D=tfs&match=one&search_field=Alt
+
+
 ## Overview
 
 Text mining techniques were applied to the Trykkefrihedens Skrifter dataset to uncover valuable information and trends within the text. The analysis aimed to understand the language, themes, and patterns present in the Skrifter.
