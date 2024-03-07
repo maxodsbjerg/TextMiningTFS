@@ -22,8 +22,9 @@ Text mining techniques were applied to the Trykkefrihedens Skrifter dataset to u
 5. **Keywords in Context (KWIC) Analysis**: A KWIC analysis was conducted to explore the context in which specific keywords appear in the text documents.
 
 6. **Bigrams Analysis**: Bigrams, or word pairs, were analyzed to identify associations and patterns in the text.
+   ![God Bigrams](./notebooks/graphics/god_bigrams.png)
 
-7. **Saving Results**: The results of the analysis, including visualizations and insights, were saved for further reference and analysis.
+8. **Saving Results**: The results of the analysis, including visualizations and insights, were saved for further reference and analysis.
 
 ## Conclusion
 
