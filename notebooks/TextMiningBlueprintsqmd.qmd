@@ -34,17 +34,21 @@ Here's a breakdown of the code: tfs_tidy: This is a new variable where the trans
 
 ```{r}
 tfs_tidy %>% 
+  filter(række == 1) %>% 
+  filter(bind %in% c(5,6)) %>% 
   count(word, sort = TRUE)
 ```
-The code tfs_tidy %>% count(word, sort = TRUE) simply counts the frequency of each unique word in the tfs_tidy dataset, sorting the results in descending order based on word count.
 
-Alot of stopwords, which are are common words like "og", "den", and "det" that are often filtered out during text analysis because they don't add significant meaning. In the code tfs_tidy %>% count(word, sort = TRUE), it counts all words, including stopwords, which may clutter the results with less informative words. Lets sort them out. 
+The code tfs_tidy %\>% count(word, sort = TRUE) simply counts the frequency of each unique word in the tfs_tidy dataset, sorting the results in descending order based on word count.
+
+Alot of stopwords, which are are common words like "og", "den", and "det" that are often filtered out during text analysis because they don't add significant meaning. In the code tfs_tidy %\>% count(word, sort = TRUE), it counts all words, including stopwords, which may clutter the results with less informative words. Lets sort them out.
 
 # Handling stopwords
 
 ```{r}
 stopord_da <- tibble(word = stopwords("da"))
 ```
+
 This code chunk creates a tibble named stopord_da containing Danish stopwords. The function stopwords("da") retrieves a list of common stopwords in the Danish language. The tibble stopord_da will have a single column named "word" containing the Danish stopwords.
 
 ```{r}
@@ -56,11 +60,13 @@ This code chunk creates a tibble named stopord_de containing German stopwords. S
 ```{r}
 stopord_tfs <- read_csv("./data/tfs_stopord.csv")
 ```
-This code chunk reads data from a CSV file named "tfs_stopord.csv" located in the "./data" directory. The function read_csv() reads the CSV file and assigns the data to the variable stopord_tfs. This file likely contains stopwords specific to the dataset or project being analyzed. The structure of the data will be similar to a tibble, with one column containing the stopwords.
-These stop words are specifically tailored for Trykkefrihedens Skrifter, considering older spelling conventions of stop words.
+
+This code chunk reads data from a CSV file named "tfs_stopord.csv" located in the "./data" directory. The function read_csv() reads the CSV file and assigns the data to the variable stopord_tfs. This file likely contains stopwords specific to the dataset or project being analyzed. The structure of the data will be similar to a tibble, with one column containing the stopwords. These stop words are specifically tailored for Trykkefrihedens Skrifter, considering older spelling conventions of stop words.
 
 ## Removing stopwords and counting again:
+
 This code performs several operations on the tfs_tidy dataset, which contains tokenized text data:
+
 ```{r}
 tfs_tidy %>%
   anti_join(stopord_da) %>% 
@@ -69,12 +75,7 @@ tfs_tidy %>%
   count(word, sort = TRUE)
 ```
 
-tfs_tidy %>%: The %>% operator, known as the pipe operator, chains operations together, passing the tfs_tidy dataset to the next function in the sequence.
-anti_join(stopord_da) %>%: This operation removes Danish stopwords from the text data by performing an anti-join with the stopord_da dataset, which contains Danish stopwords. An anti-join retains only the rows from the left dataset (tfs_tidy) that do not have a match in the right dataset (stopord_da).
-anti_join(stopord_de) %>%: Similarly, this operation removes German stopwords from the text data by performing an anti-join with the stopord_de dataset, which contains German stopwords.
-anti_join(stopord_tfs) %>%: This operation removes project-specific stopwords from the text data by performing an anti-join with the stopord_tfs dataset, which contains stopwords specific to the Trykkefrihedens Skrifter project.
-count(word, sort = TRUE): Finally, the count() function tallies the frequency of each unique word remaining in the text data after removing the stopwords. The sort = TRUE argument sorts the results in descending order of word frequency.
-In summary, this code chunk filters out Danish, German, and project-specific stopwords from the tfs_tidy dataset and then counts the frequency of the remaining words.
+tfs_tidy %\>%: The %\>% operator, known as the pipe operator, chains operations together, passing the tfs_tidy dataset to the next function in the sequence. anti_join(stopord_da) %\>%: This operation removes Danish stopwords from the text data by performing an anti-join with the stopord_da dataset, which contains Danish stopwords. An anti-join retains only the rows from the left dataset (tfs_tidy) that do not have a match in the right dataset (stopord_da). anti_join(stopord_de) %\>%: Similarly, this operation removes German stopwords from the text data by performing an anti-join with the stopord_de dataset, which contains German stopwords. anti_join(stopord_tfs) %\>%: This operation removes project-specific stopwords from the text data by performing an anti-join with the stopord_tfs dataset, which contains stopwords specific to the Trykkefrihedens Skrifter project. count(word, sort = TRUE): Finally, the count() function tallies the frequency of each unique word remaining in the text data after removing the stopwords. The sort = TRUE argument sorts the results in descending order of word frequency. In summary, this code chunk filters out Danish, German, and project-specific stopwords from the tfs_tidy dataset and then counts the frequency of the remaining words.
 
 This does the exact same thing, but only on text from Række 1, binde 5+6 (Landøkonomi (31 skrifter).)
 
@@ -83,12 +84,11 @@ tfs_tidy %>%
   anti_join(stopord_da) %>% 
   anti_join(stopord_de) %>% 
   anti_join(stopord_tfs) %>% 
-  filter(række == 1) %>% 
-  filter(bind %in% c(5,6)) %>% 
   count(word, sort = TRUE)
 ```
 
 # Keyword in context
+
 In this code we are going to conduct a 'Keywords in Context' (KWIC) analysis on the text data from Trykkefrihedens Skrifter using the quanteda package. This analysis will allow us to examine how specific keywords, such as 'jord', are used within the text documents, providing valuable insight into the context and usage patterns of these keywords throughout the corpus.
 
 ```{r}
@@ -111,11 +111,4 @@ tfs_kwic <- tfs_corp %>%
 tfs_kwic
 ```
 
-tfs_corp <- tfs_df %>% filter(række == 1 & bind %in% c(5,6)) %>% select(refnr, side, content) %>% corpus(text_field = "content"):
-This code filters the data frame tfs_df to include only rows where "række" equals 1 and "bind" is either 5 or 6. Then it selects columns "refnr," "side," and "content" from the filtered data and creates a corpus named tfs_corp using the corpus() function from the quanteda package, where "content" is the text field used in the corpus.
-docid <- paste0(tfs_corp$refnr, "- side ", tfs_corp$side):
-This line creates unique document IDs for each text document in the corpus by combining "refnr" and "side" columns separated by "- side ".
-docnames(tfs_corp) <- docid:
-This assigns the document IDs to the corpus, making it easier to track the original text back to Trykkefrihedens Skrifter.
-tfs_kwic <- tfs_corp %>% tokens() %>% kwic(pattern = phrase("jord"), window = 4):
-This code generates a keyword-in-context (KWIC) analysis for the word "jord" with a window size of 4 words, which shows the context in which "jord" appears in the text documents within the corpus. The KWIC analysis provides insight into how the word is used and in what context within the text data.
+tfs_corp \<- tfs_df %\>% filter(række == 1 & bind %in% c(5,6)) %\>% select(refnr, side, content) %\>% corpus(text_field = "content"): This code filters the data frame tfs_df to include only rows where "række" equals 1 and "bind" is either 5 or 6. Then it selects columns "refnr," "side," and "content" from the filtered data and creates a corpus named tfs_corp using the corpus() function from the quanteda package, where "content" is the text field used in the corpus. docid \<- paste0(tfs_corp$refnr, "- side ", tfs_corp$side): This line creates unique document IDs for each text document in the corpus by combining "refnr" and "side" columns separated by "- side ". docnames(tfs_corp) \<- docid: This assigns the document IDs to the corpus, making it easier to track the original text back to Trykkefrihedens Skrifter. tfs_kwic \<- tfs_corp %\>% tokens() %\>% kwic(pattern = phrase("jord"), window = 4): This code generates a keyword-in-context (KWIC) analysis for the word "jord" with a window size of 4 words, which shows the context in which "jord" appears in the text documents within the corpus. The KWIC analysis provides insight into how the word is used and in what context within the text data.
