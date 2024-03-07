@@ -1,4 +1,5 @@
-![Textmining TFS](./graphics/textmining_tfs.png)
+
+<img src="./graphics/textmining_tfs.png" alt="drawing" width="600"/>
 # Text Mining Analysis of Trykkefrihedens Skrifter
 
 This repository contains the results of a text mining analysis conducted on Trykkefrihedens Skrifter using R programming language. Text mining involves extracting meaningful insights and patterns from textual data.
